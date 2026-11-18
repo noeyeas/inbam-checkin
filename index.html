@@ -57,8 +57,6 @@
   .frame i:nth-child(2){ top:0; right:0; border-left:0; border-bottom:0; border-top-right-radius:14px; }
   .frame i:nth-child(3){ bottom:0; left:0; border-right:0; border-top:0; border-bottom-left-radius:14px; }
   .frame i:nth-child(4){ bottom:0; right:0; border-left:0; border-top:0; border-bottom-right-radius:14px; }
-  .beam { position:absolute; left:6%; right:6%; height:2px; background:linear-gradient(90deg,transparent,var(--gold2),transparent); box-shadow:0 0 12px var(--gold); animation:beam 2.2s ease-in-out infinite; }
-  @keyframes beam { 0%{top:6%} 50%{top:94%} 100%{top:6%} }
   .camerr { position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; color:var(--muted); font-size:14px; line-height:1.5; }
   .camerr b { color:#fff; font-size:16px; margin-bottom:6px; }
   .guide { text-align:center; margin:14px 0 18px; }
@@ -109,7 +107,7 @@
 
   <div class="scan">
     <div id="reader"></div>
-    <div class="frame"><i></i><i></i><i></i><i></i><div class="beam"></div></div>
+    <div class="frame"><i></i><i></i><i></i><i></i></div>
     <div class="camerr" id="camErr"><b>카메라를 열 수 없어요</b>브라우저 설정에서 카메라 권한을 허용하고<br>새로고침해 주세요</div>
   </div>
   <div class="guide"><b>도서관 모바일 이용증 QR을 비춰주세요</b><span>발급 10분 이내 QR만 인식 · 안 되면 아래에 학번 입력</span></div>
