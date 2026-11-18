@@ -2,97 +2,230 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>인융대의 밤 입장 체크</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1026">
+<title>인융대의 밤 · 입장 체크</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
-  :root { --navy:#1f3a68; }
-  * { box-sizing:border-box; }
-  body { margin:0; font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif; background:#111; color:#fff; }
-  header { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--navy); }
-  header b { font-size:17px; }
-  #count { font-size:14px; opacity:.9; }
-  #reader { width:100%; max-width:520px; margin:0 auto; background:#000; }
-  .bar { max-width:520px; margin:8px auto; padding:0 12px; display:flex; gap:8px; }
-  .bar input { flex:1; font-size:18px; padding:10px; border-radius:8px; border:0; }
-  .bar button { font-size:16px; padding:10px 14px; border:0; border-radius:8px; background:#3a7bd5; color:#fff; }
-  #hint { text-align:center; font-size:13px; opacity:.7; margin:6px 0 14px; }
-  #overlay { position:fixed; inset:0; display:none; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:24px; z-index:10; }
-  #overlay .big { font-size:46px; font-weight:800; margin-bottom:10px; }
-  #overlay .mid { font-size:24px; font-weight:700; margin-bottom:8px; }
-  #overlay .small { font-size:16px; opacity:.95; word-break:break-all; }
-  .ok { background:#1b8a3a; } .wait { background:#1565c0; } .dup { background:#c62828; } .no { background:#ef6c00; } .err { background:#555; }
+  :root {
+    --bg1:#070b1d; --bg2:#151d45; --gold:#f5c96a; --gold2:#ffe2a3;
+    --card:rgba(255,255,255,.06); --line:rgba(255,255,255,.12); --muted:rgba(255,255,255,.62);
+  }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { margin:0; height:100%; }
+  body {
+    font-family:'Pretendard',-apple-system,'Apple SD Gothic Neo',sans-serif; color:#fff; word-break:keep-all;
+    background:
+      radial-gradient(1.5px 1.5px at 12% 18%, rgba(255,255,255,.7), transparent 60%),
+      radial-gradient(1px 1px at 78% 12%, rgba(255,255,255,.6), transparent 60%),
+      radial-gradient(1.2px 1.2px at 64% 34%, rgba(255,255,255,.45), transparent 60%),
+      radial-gradient(1px 1px at 28% 62%, rgba(255,255,255,.4), transparent 60%),
+      radial-gradient(1.4px 1.4px at 88% 72%, rgba(255,255,255,.5), transparent 60%),
+      radial-gradient(1px 1px at 8% 86%, rgba(255,255,255,.35), transparent 60%),
+      radial-gradient(120% 70% at 50% -10%, #2a3a8a 0%, transparent 60%),
+      linear-gradient(180deg, var(--bg2), var(--bg1));
+    background-attachment:fixed;
+  }
+  .wrap { max-width:480px; margin:0 auto; padding:calc(14px + env(safe-area-inset-top)) 18px calc(24px + env(safe-area-inset-bottom)); }
+
+  /* 헤더 */
+  header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .brand { display:flex; align-items:center; gap:10px; }
+  .moon { width:34px; height:34px; border-radius:50%; background:radial-gradient(circle at 35% 35%, var(--gold2), var(--gold) 55%, #c9973a); box-shadow:0 0 18px rgba(245,201,106,.55); position:relative; }
+  .moon::after { content:''; position:absolute; width:26px; height:26px; border-radius:50%; background:var(--bg2); top:-3px; left:12px; }
+  .brand b { display:block; font-size:19px; font-weight:800; letter-spacing:-.3px; }
+  .brand small { display:block; font-size:10.5px; letter-spacing:2.4px; color:var(--gold); font-weight:600; margin-top:1px; }
+  .chip { border:1px solid var(--line); background:var(--card); padding:7px 12px; border-radius:999px; font-size:13px; color:var(--muted); backdrop-filter:blur(8px); }
+  .chip b { color:#fff; font-weight:700; }
+
+  /* 통계 */
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:11px 12px; backdrop-filter:blur(8px); }
+  .stat span { font-size:12px; color:var(--muted); }
+  .stat b { display:block; font-size:24px; font-weight:800; margin-top:2px; font-variant-numeric:tabular-nums; }
+  .stat.main b { color:var(--gold); }
+
+  /* 스캐너 */
+  .scan { position:relative; aspect-ratio:1/1; border-radius:28px; overflow:hidden; background:#000; border:1px solid var(--line); box-shadow:0 20px 50px rgba(0,0,0,.45); }
+  #reader { position:absolute; inset:0; }
+  #reader video { width:100% !important; height:100% !important; object-fit:cover; }
+  #reader #qr-shaded-region, #reader img { display:none !important; }
+  .frame { position:absolute; inset:16%; pointer-events:none; }
+  .frame i { position:absolute; width:36px; height:36px; border:4px solid var(--gold); }
+  .frame i:nth-child(1){ top:0; left:0; border-right:0; border-bottom:0; border-top-left-radius:14px; }
+  .frame i:nth-child(2){ top:0; right:0; border-left:0; border-bottom:0; border-top-right-radius:14px; }
+  .frame i:nth-child(3){ bottom:0; left:0; border-right:0; border-top:0; border-bottom-left-radius:14px; }
+  .frame i:nth-child(4){ bottom:0; right:0; border-left:0; border-top:0; border-bottom-right-radius:14px; }
+  .beam { position:absolute; left:6%; right:6%; height:2px; background:linear-gradient(90deg,transparent,var(--gold2),transparent); box-shadow:0 0 12px var(--gold); animation:beam 2.2s ease-in-out infinite; }
+  @keyframes beam { 0%{top:6%} 50%{top:94%} 100%{top:6%} }
+  .camerr { position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; color:var(--muted); font-size:14px; line-height:1.5; }
+  .camerr b { color:#fff; font-size:16px; margin-bottom:6px; }
+  .guide { text-align:center; margin:14px 0 18px; }
+  .guide b { font-size:15px; font-weight:700; }
+  .guide span { display:block; font-size:12.5px; color:var(--muted); margin-top:4px; }
+
+  /* 수기 입력 */
+  .manual { display:flex; gap:8px; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:6px; backdrop-filter:blur(8px); }
+  .manual input { flex:1; min-width:0; background:transparent; border:0; outline:0; color:#fff; font:inherit; font-size:16px; padding:10px 12px; letter-spacing:.5px; }
+  .manual input::placeholder { color:rgba(255,255,255,.4); }
+  .manual button { border:0; border-radius:13px; padding:0 18px; font:inherit; font-weight:700; font-size:15px; color:#1a1530; background:linear-gradient(180deg,var(--gold2),var(--gold)); }
+
+  /* 결과 */
+  #overlay { position:fixed; inset:0; z-index:20; display:none; align-items:center; justify-content:center; padding:24px; }
+  #overlay.show { display:flex; animation:fade .18s ease-out; }
+  @keyframes fade { from{opacity:0} to{opacity:1} }
+  .card { width:100%; max-width:420px; text-align:center; animation:pop .25s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes pop { from{transform:scale(.9)} to{transform:scale(1)} }
+  .icon { width:110px; height:110px; margin:0 auto 22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:58px; font-weight:800; background:rgba(255,255,255,.18); box-shadow:0 0 0 10px rgba(255,255,255,.08); }
+  .ttl { font-size:40px; font-weight:800; letter-spacing:-1px; }
+  .who { margin-top:14px; font-size:19px; font-weight:700; }
+  .sid { margin-top:4px; font-size:16px; opacity:.85; font-variant-numeric:tabular-nums; letter-spacing:.5px; }
+  .badge { display:inline-block; margin-top:14px; padding:6px 14px; border-radius:999px; background:rgba(0,0,0,.22); font-size:14px; font-weight:700; }
+  .msg { margin-top:16px; font-size:16px; line-height:1.5; opacity:.95; }
+  .bar { height:4px; border-radius:4px; background:rgba(255,255,255,.25); margin:28px auto 0; width:60%; overflow:hidden; }
+  .bar i { display:block; height:100%; background:#fff; width:100%; transform-origin:left; }
+  .tap { margin-top:10px; font-size:12px; opacity:.6; }
+  .ok   { background:radial-gradient(120% 80% at 50% 20%, #34d399, #059669 60%, #064e3b); }
+  .wait { background:radial-gradient(120% 80% at 50% 20%, #60a5fa, #2563eb 60%, #1e3a8a); }
+  .dup  { background:radial-gradient(120% 80% at 50% 20%, #fb7185, #e11d48 60%, #7f1d1d); }
+  .no   { background:radial-gradient(120% 80% at 50% 20%, #fdba74, #ea580c 60%, #7c2d12); }
+  .exp  { background:radial-gradient(120% 80% at 50% 20%, #fcd34d, #d97706 60%, #78350f); }
+  .err  { background:radial-gradient(120% 80% at 50% 20%, #9ca3af, #4b5563 60%, #111827); }
 </style>
 </head>
 <body>
-<header><b>인융대의 밤 입장 체크</b><span id="count">입장 -명</span></header>
-<div id="reader"></div>
-<div class="bar">
-  <input id="manual" inputmode="numeric" placeholder="QR 안 될 때 학번 직접 입력">
-  <button id="manualBtn">확인</button>
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="moon"></div><div><b>인융대의 밤</b><small>ENTRY CHECK</small></div></div>
+    <div class="chip" id="devChip">📱 <b id="devName">-</b></div>
+  </header>
+
+  <div class="stats">
+    <div class="stat main"><span>입장</span><b id="stEntered">-</b></div>
+    <div class="stat"><span>대기</span><b id="stWait">-</b></div>
+    <div class="stat"><span>중복 시도</span><b id="stDup">-</b></div>
+  </div>
+
+  <div class="scan">
+    <div id="reader"></div>
+    <div class="frame"><i></i><i></i><i></i><i></i><div class="beam"></div></div>
+    <div class="camerr" id="camErr"><b>카메라를 열 수 없어요</b>브라우저 설정에서 카메라 권한을 허용하고<br>새로고침해 주세요</div>
+  </div>
+  <div class="guide"><b>도서관 모바일 이용증 QR을 비춰주세요</b><span>발급 10분 이내 QR만 인식 · 안 되면 아래에 학번 입력</span></div>
+
+  <div class="manual">
+    <input id="manual" inputmode="numeric" maxlength="10" placeholder="학번 10자리 직접 입력">
+    <button id="manualBtn">확인</button>
+  </div>
 </div>
-<div id="hint">도서관 앱 모바일 이용증 QR을 화면 가운데에 맞춰 주세요 (발급 10분 이내)</div>
-<div id="overlay"><div class="big" id="ovBig"></div><div class="mid" id="ovMid"></div><div class="small" id="ovSmall"></div></div>
+
+<div id="overlay">
+  <div class="card">
+    <div class="icon" id="ovIcon"></div>
+    <div class="ttl" id="ovTitle"></div>
+    <div class="who" id="ovWho"></div>
+    <div class="sid" id="ovSid"></div>
+    <div><span class="badge" id="ovBadge"></span></div>
+    <div class="msg" id="ovMsg"></div>
+    <div class="bar"><i id="ovBar"></i></div>
+    <div class="tap">화면을 누르면 바로 다음 스캔</div>
+  </div>
+</div>
 
 <script>
-// ===== 설정 (Apps Script 배포 후 바꾸기) =====
+// ===== 설정 =====
 const API_URL = 'https://script.google.com/macros/s/AKfycbwjQ1hEE1lU7nKk86ewiTwhekyOozaFmTdQKSD8LiPa19jZPVjDj37vLXJUmw5bedc2dg/exec';
 const KEY = 'inbam-g1lywbsgx4ou';   // Code.gs 의 SECRET 과 같아야 함
-// ============================================
+// ================
 
+const $ = id => document.getElementById(id);
 let device = localStorage.getItem('inbam_device');
-if (!device) { device = prompt('이 폰 이름 (예: 입구1, 세연폰)') || '미지정'; localStorage.setItem('inbam_device', device); }
+if (!device) { device = (prompt('이 폰 이름을 정해주세요 (예: 입구1)') || '입구').trim(); localStorage.setItem('inbam_device', device); }
+$('devName').textContent = device;
+$('devChip').onclick = () => { const v = prompt('폰 이름 변경', device); if (v) { device = v.trim(); localStorage.setItem('inbam_device', device); $('devName').textContent = device; } };
 
-const ov = document.getElementById('overlay');
-let busy = false, lastText = '', lastAt = 0, scanner;
-
-function show(cls, big, mid, small, ms) {
-  ov.className = cls; ov.style.display = 'flex';
-  document.getElementById('ovBig').textContent = big;
-  document.getElementById('ovMid').textContent = mid || '';
-  document.getElementById('ovSmall').textContent = small || '';
-  if (navigator.vibrate) navigator.vibrate(cls === 'ok' ? 120 : [200, 100, 200]);
-  clearTimeout(show.t);
-  show.t = setTimeout(hide, ms || 2200);
+// 효과음
+let actx;
+function beep(ok) {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const seq = ok ? [[880, 0], [1320, .09]] : [[330, 0], [330, .18]];
+    seq.forEach(([f, t]) => { const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = f; o.type = 'sine';
+      g.gain.setValueAtTime(.0001, actx.currentTime + t); g.gain.exponentialRampToValueAtTime(.25, actx.currentTime + t + .01);
+      g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + t + .15); o.connect(g).connect(actx.destination); o.start(actx.currentTime + t); o.stop(actx.currentTime + t + .16); });
+  } catch (e) {}
 }
-function hide() { ov.style.display = 'none'; busy = false; }
+
+const ov = $('overlay');
+let busy = false, lastText = '', lastAt = 0, hideT;
+function show(cls, icon, title, opts) {
+  opts = opts || {};
+  ov.className = 'show ' + cls;
+  $('ovIcon').textContent = icon; $('ovTitle').textContent = title;
+  $('ovWho').textContent = opts.who || ''; $('ovSid').textContent = opts.sid || '';
+  $('ovBadge').textContent = opts.badge || ''; $('ovBadge').style.display = opts.badge ? 'inline-block' : 'none';
+  $('ovMsg').textContent = opts.msg || '';
+  const ms = opts.ms || 2200, bar = $('ovBar');
+  bar.style.transition = 'none'; bar.style.transform = 'scaleX(1)';
+  requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.transition = 'transform ' + ms + 'ms linear'; bar.style.transform = 'scaleX(0)'; }));
+  beep(cls === 'ok');
+  if (navigator.vibrate) navigator.vibrate(cls === 'ok' ? 120 : [200, 90, 200]);
+  clearTimeout(hideT); hideT = setTimeout(hide, ms);
+}
+function hide() { ov.className = ''; busy = false; }
 ov.addEventListener('click', hide);
+
+function setStats(d) {
+  if (d.entered !== undefined) $('stEntered').textContent = d.entered;
+  if (d.waiting !== undefined) $('stWait').textContent = d.waiting;
+  if (d.duplicate !== undefined) $('stDup').textContent = d.duplicate;
+}
+function refreshStats() {
+  fetch(API_URL + '?key=' + encodeURIComponent(KEY) + '&action=stats').then(r => r.json()).then(setStats).catch(() => {});
+}
 
 async function check(text) {
   const now = Date.now();
-  if (busy || (text === lastText && now - lastAt < 4000)) return;   // 같은 QR 연속 인식 방지
+  if (busy || (text === lastText && now - lastAt < 4000)) return;
   busy = true; lastText = text; lastAt = now;
   try {
     const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ key: KEY, qr: text, device }) });
     const d = await res.json();
-    if (d.count !== undefined) document.getElementById('count').textContent = '입장 ' + d.count + '명';
-    const who = [d.dept, d.name, d.sid].filter(Boolean).join(' · ');
-    if (d.status === 'ok') show('ok', '입장 가능', who, (d.paid ? '학생회비 납부자' : '학생회비 미납') + ' · 핫팩·쿠폰 지급해 주세요', 1800);
-    else if (d.status === 'wait') show('wait', '잠시 대기', who, '학생회비 납부자 먼저 입장 중이에요. ' + d.openAt + '부터 입장할 수 있어요', 3500);
-    else if (d.status === 'duplicate') show('dup', '중복 수령', who, '이미 ' + d.firstTime + '에 입장 처리된 학번이에요', 3500);
-    else if (d.status === 'not_member') show('no', '인융대 아님', d.sid, '인공지능융합대학 소속이 아니에요', 3500);
-    else if (d.status === 'expired') show('no', 'QR 만료', d.sid, d.issued + '에 발급된 QR이에요. 도서관 앱에서 새로고침 후 다시 보여달라고 해주세요', 4000);
-    else if (d.status === 'unreadable') show('err', '학번 인식 실패', '아래 칸에 학번을 직접 입력해 주세요', 'QR 내용: ' + (d.raw || '').slice(0, 80), 4000);
-    else show('err', '오류', d.message || '다시 시도해 주세요', '', 3000);
+    const who = [d.dept, d.name].filter(Boolean).join(' · ');
+    if (d.status === 'ok')
+      show('ok', '✓', '입장 완료', { who, sid: d.sid, badge: d.paid ? '학생회비 납부' : '학생회비 미납', msg: '핫팩과 쿠폰을 드려주세요', ms: 1800 });
+    else if (d.status === 'wait')
+      show('wait', '⏳', '잠시 대기', { who, sid: d.sid, badge: '학생회비 미납', msg: '납부자 먼저 입장 중이에요. ' + d.openAt + '부터 입장할 수 있어요', ms: 3500 });
+    else if (d.status === 'duplicate')
+      show('dup', '✕', '이미 입장했어요', { who, sid: d.sid, msg: d.firstTime + '에 입장 처리된 학번이에요', ms: 3500 });
+    else if (d.status === 'not_member')
+      show('no', '!', '인융대 학생이 아니에요', { sid: d.sid, msg: '인공지능융합대학 재학생만 입장할 수 있어요', ms: 3500 });
+    else if (d.status === 'expired')
+      show('exp', '↻', 'QR이 만료됐어요', { sid: d.sid, msg: d.issued + '에 발급된 QR이에요. 도서관 앱에서 새로고침해 달라고 해주세요', ms: 4000 });
+    else if (d.status === 'unreadable')
+      show('err', '?', '학번을 못 읽었어요', { msg: '도서관 모바일 이용증 QR이 맞는지 확인하거나 아래에 학번을 입력해 주세요', ms: 3500 });
+    else
+      show('err', '!', '오류', { msg: d.message || '다시 시도해 주세요', ms: 3000 });
+    refreshStats();
   } catch (e) {
-    show('err', '연결 오류', '인터넷 연결을 확인해 주세요', String(e).slice(0, 80), 3000);
+    show('err', '⚡', '연결이 안 돼요', { msg: '인터넷 연결을 확인하고 다시 찍어주세요', ms: 3000 });
   }
 }
 
-document.getElementById('manualBtn').onclick = () => {
-  const v = document.getElementById('manual').value.trim();
-  if (!/^20\d{8}$/.test(v)) { show('err', '학번 형식 확인', '10자리 학번을 입력해 주세요', '', 2000); return; }
-  document.getElementById('manual').value = '';
-  lastText = ''; check(v);
+$('manualBtn').onclick = () => {
+  const v = $('manual').value.replace(/\D/g, '');
+  if (!/^20\d{8}$/.test(v)) { show('err', '!', '학번을 확인해 주세요', { msg: '숫자 10자리로 입력해 주세요', ms: 2000 }); return; }
+  $('manual').value = ''; $('manual').blur(); lastText = ''; check(v);
 };
+$('manual').addEventListener('keydown', e => { if (e.key === 'Enter') $('manualBtn').click(); });
 
-scanner = new Html5Qrcode('reader');
-scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 240, height: 240 } }, check, () => {})
-  .catch(e => show('err', '카메라를 열 수 없어요', '브라우저 카메라 권한을 허용해 주세요', String(e).slice(0, 80), 6000));
+const scanner = new Html5Qrcode('reader', { verbose: false });
+scanner.start({ facingMode: 'environment' }, { fps: 12, qrbox: (w, h) => { const s = Math.floor(Math.min(w, h) * 0.68); return { width: s, height: s }; } }, check, () => {})
+  .catch(() => { $('camErr').style.display = 'flex'; });
 
-fetch(API_URL + '?key=' + encodeURIComponent(KEY) + '&action=stats')
-  .then(r => r.json()).then(d => { if (d.entered !== undefined) document.getElementById('count').textContent = '입장 ' + d.entered + '명'; })
-  .catch(() => {});
+refreshStats();
+setInterval(refreshStats, 15000);
 </script>
 </body>
 </html>
