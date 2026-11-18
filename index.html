@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>인융대의 밤 입장 체크</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root { --navy:#1f3a68; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif; background:#111; color:#fff; }
+  header { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--navy); }
+  header b { font-size:17px; }
+  #count { font-size:14px; opacity:.9; }
+  #reader { width:100%; max-width:520px; margin:0 auto; background:#000; }
+  .bar { max-width:520px; margin:8px auto; padding:0 12px; display:flex; gap:8px; }
+  .bar input { flex:1; font-size:18px; padding:10px; border-radius:8px; border:0; }
+  .bar button { font-size:16px; padding:10px 14px; border:0; border-radius:8px; background:#3a7bd5; color:#fff; }
+  #hint { text-align:center; font-size:13px; opacity:.7; margin:6px 0 14px; }
+  #overlay { position:fixed; inset:0; display:none; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:24px; z-index:10; }
+  #overlay .big { font-size:46px; font-weight:800; margin-bottom:10px; }
+  #overlay .mid { font-size:24px; font-weight:700; margin-bottom:8px; }
+  #overlay .small { font-size:16px; opacity:.95; word-break:break-all; }
+  .ok { background:#1b8a3a; } .wait { background:#1565c0; } .dup { background:#c62828; } .no { background:#ef6c00; } .err { background:#555; }
+</style>
+</head>
+<body>
+<header><b>인융대의 밤 입장 체크</b><span id="count">입장 -명</span></header>
+<div id="reader"></div>
+<div class="bar">
+  <input id="manual" inputmode="numeric" placeholder="QR 안 될 때 학번 직접 입력">
+  <button id="manualBtn">확인</button>
+</div>
+<div id="hint">도서관 앱 모바일 이용증 QR을 화면 가운데에 맞춰 주세요 (발급 10분 이내)</div>
+<div id="overlay"><div class="big" id="ovBig"></div><div class="mid" id="ovMid"></div><div class="small" id="ovSmall"></div></div>
+
+<script>
+// ===== 설정 (Apps Script 배포 후 바꾸기) =====
+const API_URL = 'https://script.google.com/macros/s/AKfycbwjQ1hEE1lU7nKk86ewiTwhekyOozaFmTdQKSD8LiPa19jZPVjDj37vLXJUmw5bedc2dg/exec';
+const KEY = 'inbam-g1lywbsgx4ou';   // Code.gs 의 SECRET 과 같아야 함
+// ============================================
+
+let device = localStorage.getItem('inbam_device');
+if (!device) { device = prompt('이 폰 이름 (예: 입구1, 세연폰)') || '미지정'; localStorage.setItem('inbam_device', device); }
+
+const ov = document.getElementById('overlay');
+let busy = false, lastText = '', lastAt = 0, scanner;
+
+function show(cls, big, mid, small, ms) {
+  ov.className = cls; ov.style.display = 'flex';
+  document.getElementById('ovBig').textContent = big;
+  document.getElementById('ovMid').textContent = mid || '';
+  document.getElementById('ovSmall').textContent = small || '';
+  if (navigator.vibrate) navigator.vibrate(cls === 'ok' ? 120 : [200, 100, 200]);
+  clearTimeout(show.t);
+  show.t = setTimeout(hide, ms || 2200);
+}
+function hide() { ov.style.display = 'none'; busy = false; }
+ov.addEventListener('click', hide);
+
+async function check(text) {
+  const now = Date.now();
+  if (busy || (text === lastText && now - lastAt < 4000)) return;   // 같은 QR 연속 인식 방지
+  busy = true; lastText = text; lastAt = now;
+  try {
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ key: KEY, qr: text, device }) });
+    const d = await res.json();
+    if (d.count !== undefined) document.getElementById('count').textContent = '입장 ' + d.count + '명';
+    const who = [d.dept, d.name, d.sid].filter(Boolean).join(' · ');
+    if (d.status === 'ok') show('ok', '입장 가능', who, (d.paid ? '학생회비 납부자' : '학생회비 미납') + ' · 핫팩·쿠폰 지급해 주세요', 1800);
+    else if (d.status === 'wait') show('wait', '잠시 대기', who, '학생회비 납부자 먼저 입장 중이에요. ' + d.openAt + '부터 입장할 수 있어요', 3500);
+    else if (d.status === 'duplicate') show('dup', '중복 수령', who, '이미 ' + d.firstTime + '에 입장 처리된 학번이에요', 3500);
+    else if (d.status === 'not_member') show('no', '인융대 아님', d.sid, '인공지능융합대학 소속이 아니에요', 3500);
+    else if (d.status === 'expired') show('no', 'QR 만료', d.sid, d.issued + '에 발급된 QR이에요. 도서관 앱에서 새로고침 후 다시 보여달라고 해주세요', 4000);
+    else if (d.status === 'unreadable') show('err', '학번 인식 실패', '아래 칸에 학번을 직접 입력해 주세요', 'QR 내용: ' + (d.raw || '').slice(0, 80), 4000);
+    else show('err', '오류', d.message || '다시 시도해 주세요', '', 3000);
+  } catch (e) {
+    show('err', '연결 오류', '인터넷 연결을 확인해 주세요', String(e).slice(0, 80), 3000);
+  }
+}
+
+document.getElementById('manualBtn').onclick = () => {
+  const v = document.getElementById('manual').value.trim();
+  if (!/^20\d{8}$/.test(v)) { show('err', '학번 형식 확인', '10자리 학번을 입력해 주세요', '', 2000); return; }
+  document.getElementById('manual').value = '';
+  lastText = ''; check(v);
+};
+
+scanner = new Html5Qrcode('reader');
+scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 240, height: 240 } }, check, () => {})
+  .catch(e => show('err', '카메라를 열 수 없어요', '브라우저 카메라 권한을 허용해 주세요', String(e).slice(0, 80), 6000));
+
+fetch(API_URL + '?key=' + encodeURIComponent(KEY) + '&action=stats')
+  .then(r => r.json()).then(d => { if (d.entered !== undefined) document.getElementById('count').textContent = '입장 ' + d.entered + '명'; })
+  .catch(() => {});
+</script>
+</body>
+</html>
