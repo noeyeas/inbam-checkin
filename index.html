@@ -10106,7 +10106,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
 (function(){
 const CLIENT_ID='194872939058-c94doq6c4luqr0d4dfe8sar2kinjhrkg.apps.googleusercontent.com',ENDPOINT='https://script.google.com/macros/s/AKfycby-20HdsItUKSZfRQlA1V8xd9tt8WC1d11GH8U81CAErLHGKVgCGiSXlaNNBL7uIMeZ4w/exec',TTL=30*60*1000,MAXLEN=120;
 const OK=['challenge','ready','ok','duplicate','wait','not_member','closed','expired','invalid','busy','denied','error','bye'];
-const R={ok:['ok','입장 OK','입장 처리했어'],duplicate:['dup','이미 입장함','같은 QR로 이미 입장했어 · 재입장·재수령 불가'],wait:['wait','잠시 대기','학생회비 미납부자 · {open}부터 입장 가능'],not_member:['no','입장 대상 아님','인공지능융합대학 학생으로 확인되지 않았어'],closed:['wait','아직 입장 전','{open}부터 입장 가능'],expired:['no','만료된 QR','도서관 앱에서 QR을 새로 띄워 달라고 해 줘'],invalid:['no','인식할 수 없는 QR','도서관 모바일 이용증 QR인지 확인해 줘'],busy:['err','다시 찍어 줘','서버가 잠시 바빠'],error:['err','다시 찍어 줘','결과를 받지 못했어']};
+const R={ok:['ok','입장 OK','입장 처리했어'],duplicate:['dup','이미 입장함','이 학생은 이미 입장했어 · 재입장·재수령 불가'],wait:['wait','잠시 대기','학생회비 미납부자 · {open}부터 입장 가능'],not_member:['no','입장 대상 아님','인공지능융합대학 학생으로 확인되지 않았어'],closed:['wait','아직 입장 전','{open}부터 입장 가능'],expired:['no','만료된 QR','도서관 앱에서 QR을 새로 띄워 달라고 해 줘'],invalid:['no','인식할 수 없는 QR','도서관 모바일 이용증 QR인지 확인해 줘'],busy:['err','다시 찍어 줘','서버가 잠시 바빠'],error:['err','다시 찍어 줘','결과를 받지 못했어']};
 const el=id=>document.getElementById(id),v=el('v'),c=document.createElement('canvas'),ctx=c.getContext('2d',{willReadFrequently:true});
 let stream=null,run=0,busy=false,SESSION='',NONCE='',expTimer=0,authBusy=false,mode='',lastH=0,lastAt=0,resumeT=0,hidBuf='',hidFirst=0,hidLast=0,hidBad=false;
 function note(t){el('msg').textContent=t}
