@@ -10136,7 +10136,7 @@ async function newChallenge(){
  if(authBusy||SESSION)return;authBusy=true;
  const j=await api({action:'challenge',seed:hex64()});
  authBusy=false;
- if(j.status!=='challenge'||typeof j.nonce!=='string'||!/^[A-Za-z0-9_\-]{8,256}$/.test(j.nonce)){note('서버에 연결하지 못했어.');show('error','서버 확인 실패');el('retry').hidden=false;el('gbtn').hidden=true;return}
+ if(j.status!=='challenge'||typeof j.nonce!=='string'||!/^[A-Za-z0-9_.-]{8,256}$/.test(j.nonce)){note('서버에 연결하지 못했어.');show('error','서버 확인 실패');el('retry').hidden=false;el('gbtn').hidden=true;return}
  NONCE=j.nonce;el('retry').hidden=true;el('gbtn').hidden=false;setupGis();
  note('Google 계정으로 로그인해 줘.');
 }
